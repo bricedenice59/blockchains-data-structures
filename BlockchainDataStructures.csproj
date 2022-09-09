@@ -11,8 +11,17 @@
   <ItemGroup>
     <None Remove="15493170.json" />
     <None Remove="RadixDataStructure\" />
+    <None Remove="MerkleTree\" />
+    <None Remove="MerkleTree\Utils\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="RadixDataStructure\" />
+    <Folder Include="MerkleTree\" />
+    <Folder Include="MerkleTree\Utils\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="RadixDataStructure\mockData.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 ﻿using System.Reflection.Emit;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using BlockchainDataStructures.RadixDataStructure;
 
@@ -6,6 +7,7 @@ namespace BlockChainDataStructures.RadixdataStructure
 {
     /// <summary>
     /// https://medium.com/coinmonks/data-structure-in-ethereum-episode-2-radix-trie-and-merkle-trie-d941d0bfd69a
+    /// Wikipedia's section insertion is very intuitive and it was easier to me to build the different steps for the algo, check section Insertion from https://en.wikipedia.org/wiki/Radix_tree
     /// </summary>
     public class RadixTree
     {
@@ -20,13 +22,14 @@ namespace BlockChainDataStructures.RadixdataStructure
         /// Add a list of keys and values to the tree
         /// </summary>
         /// <param name="keyValues"></param>
-        public void Add(IEnumerable<KeyValuePair<string, int>> keyValues)
+        public RadixNode Add(IEnumerable<KeyValuePair<string, int>> keyValues)
         {
             foreach (var keyValue in keyValues)
             {
                 //we always want to insert a new key/value pair by traversing the tree from the rootNode
                 Insert(keyValue, _rootNode);
             }
+            return _rootNode;
         }
 
         /// <summary>
@@ -36,27 +39,67 @@ namespace BlockChainDataStructures.RadixdataStructure
         /// <param name="node">the root node</param>
         private void Insert(KeyValuePair<string, int> keyValue, RadixNode node)
         {
-            string key = keyValue.Key;
-            int value = keyValue.Value;
-
-            if (string.IsNullOrEmpty(key)) return;
-
             //is the current node, the root? then create a child with the complete word and its value
             if (node.IsNodeRoot())
             {
-                node.ChildrenNodes.Add(new RadixNode(key, value));
+                node.ChildrenNodes.Add(new RadixNode(keyValue.Key, keyValue.Value));
                 return;
             }
             else
             {
-                var result = GetNearestBestConsecutivesMatchesChars(key, string.Empty,  0, node);
-                var charMatching = result.Item1;
-                var matchingNode = result.Item2;
-                var newWordPart = key.Substring(charMatching, key.Length - charMatching);
+                string key = keyValue.Key;
+                int value = keyValue.Value;
+                var matches = GetNearestBestConsecutivesMatchesChars(key, node);
 
-                matchingNode.ChildrenNodes.Add(new RadixNode(newWordPart, value));
+                if ((matches >= 0) && (matches < key.Length) && (matches >= node.Key.Length))
+                {
+                    bool inserted = false;
+                    var keyPart = key.Substring(matches, key.Length - matches);
+                    foreach (var childNode in node.ChildrenNodes)
+                    {
+                        if (childNode.Key.StartsWith(keyPart[0]))
+                        {
+                            inserted = true;
+                            Insert(new KeyValuePair<string, int>(keyPart, value), childNode);
+                        }
+                    }
+                    if (!inserted)
+                    {
+                        node.ChildrenNodes.Add(new RadixNode(keyPart, value));
+                    }
+                }
+                else
+                {
+                    if (matches < key.Length)
+                    {
+                        //(https://en.wikipedia.org/wiki/Radix_tree) => Insertion 4th step
+                        //Insert 'team' while splitting 'test' and creating a new edge label 'st'
+                        //Insert 'toast' while splitting 'te' and moving previous strings a level lower
+
+                        string root = key.Substring(0, matches);
+                        string previousKey = node.Key.Substring(matches, node.Key.Length - matches);
+                        string newKey = key.Substring(matches, key.Length - matches);
+
+                        node.Key = root;
+
+                        var newNodeWithPreviousKey = new RadixNode(previousKey,value);
+                        newNodeWithPreviousKey.ChildrenNodes.AddRange(node.ChildrenNodes);
+
+                        node.ChildrenNodes.Clear();
+                        node.ChildrenNodes.Add(newNodeWithPreviousKey);
+
+                        var newNodeWithNewKey = new RadixNode(newKey, value);
+                        node.ChildrenNodes.Add(newNodeWithNewKey);
+
+                        return;
+                    }
+                    if (matches > node.Key.Length)
+                    {
+                        string mewKey = node.Key.Substring(node.Key.Length, key.Length);
+                        node.ChildrenNodes.Add(new RadixNode(mewKey,value));
+                    }
+                }
             }
-
         }
 
         /// <summary>
@@ -67,42 +110,22 @@ namespace BlockChainDataStructures.RadixdataStructure
         /// <param name="matches">number of consecutive chars, used for recursion only, starts with parameter value = 0</param>
         /// <param name="currentNode">the current node traversed recursively</param>
         /// <returns>Returns a tuple, 1. consecutive characters that are matching, 2. the node that matches condition 1</returns>
-        (int, RadixNode) GetNearestBestConsecutivesMatchesChars(string keyLookup, string previousKey, int matches, RadixNode currentNode)
+        int GetNearestBestConsecutivesMatchesChars(string keyLookup, RadixNode currentNode)
         {
-            int previousMatches = matches;
-            RadixNode node = currentNode;
-            matches = 0;
+            int matches = 0;
+            var curentNodeKeyLength = currentNode.Key.Length;
+            var keyLookupLength = keyLookup.Length;
 
-            var newWordPart = keyLookup.Substring(previousMatches, keyLookup.Length - previousMatches);
-            if (newWordPart.Length == 0)
-                return (previousMatches, node);
+            var smallestStrLength = keyLookupLength < curentNodeKeyLength ? keyLookupLength : curentNodeKeyLength;
+            if (smallestStrLength == 0) return matches;
 
-            foreach (var childNode in currentNode.ChildrenNodes.Where(x => x.Key.StartsWith(newWordPart[0])))
+            for (int i = 0; i < smallestStrLength; i++)
             {
-                string nodeKey = previousKey + childNode.Key;
-
-                if (keyLookup.Equals(nodeKey)) return (keyLookup.Length, childNode);
-
-                var exist = newWordPart.IndexOf(childNode.Key, 0);
-                if (exist != 0)
-                    continue;
-
-                node = childNode;
-
-                for (int i = 0; i < nodeKey.Length; i++)
-                {
-                    if (i == keyLookup.Length) break;
-                    if (keyLookup[i] == nodeKey[i])
-                        matches++;
-                    else break;
-                }
-
-                if (previousMatches > matches)
-                    break;
-
-                return GetNearestBestConsecutivesMatchesChars(keyLookup, nodeKey, matches, node);
+                if (keyLookup[i] == currentNode.Key[i])
+                    matches++;
+                else break;
             }
-            return (previousMatches, node);
+            return matches;
         }
     }
 }
