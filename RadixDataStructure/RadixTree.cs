@@ -1,7 +1,9 @@
-﻿using System.Reflection.Emit;
+﻿using System.Linq;
+using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using BlockchainDataStructures.RadixDataStructure;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace BlockChainDataStructures.RadixdataStructure
 {
@@ -29,6 +31,7 @@ namespace BlockChainDataStructures.RadixdataStructure
                 //we always want to insert a new key/value pair by traversing the tree from the rootNode
                 Insert(keyValue, _rootNode);
             }
+            _rootNode.SetLast();
             return _rootNode;
         }
 
@@ -55,13 +58,10 @@ namespace BlockChainDataStructures.RadixdataStructure
                 {
                     bool inserted = false;
                     var keyPart = key.Substring(matches, key.Length - matches);
-                    foreach (var childNode in node.ChildrenNodes)
+                    foreach (var childNode in node.ChildrenNodes.Where(x => x.Key.StartsWith(keyPart[0])))
                     {
-                        if (childNode.Key.StartsWith(keyPart[0]))
-                        {
-                            inserted = true;
-                            Insert(new KeyValuePair<string, int>(keyPart, value), childNode);
-                        }
+                        inserted = true;
+                        Insert(new KeyValuePair<string, int>(keyPart, value), childNode);
                     }
                     if (!inserted)
                     {
@@ -100,6 +100,38 @@ namespace BlockChainDataStructures.RadixdataStructure
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Search for a key in tree
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="node"></param>
+        /// <returns>true if found, otherwise false</returns>
+        public bool Lookup(string key, RadixNode node)
+        {
+            if (string.IsNullOrEmpty(key))
+                return false;
+
+            return LookupInternal(key, node);
+        }
+
+        private bool LookupInternal(string key, RadixNode node)
+        {
+            var matches = GetNearestBestConsecutivesMatchesChars(key, node);
+
+            if ((matches >= 0) && (matches < key.Length) && (matches >= node.Key.Length))
+            {
+                string lookupKey = matches == 0 ? key : key.Substring(matches, key.Length - matches);
+
+                foreach (var childNode in node.ChildrenNodes.Where(x=>x.Key.StartsWith(lookupKey[0])))
+                {
+                    return Lookup(lookupKey, childNode);
+                }
+
+                return false;
+            }
+            return (matches == node.Key.Length);
         }
 
         /// <summary>

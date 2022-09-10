@@ -23,7 +23,6 @@ RadixTree radixTree = new();
 var result = radixTree.Add(dataSet);
 PrettyPrintTree.Print(result, "", true);
 
-
 //now try with fake random words
 var thisDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 var mockDataJsonPath = File.ReadAllText(Path.Combine(thisDir, "RadixDataStructure", "mockData.json"));
@@ -40,6 +39,9 @@ for (int i = 0; i < jsonObject.Count; i++)
 RadixTree _radixTree = new();
 var _result = _radixTree.Add(_dataSet);
 PrettyPrintTree.Print(_result, "", true);
+
+Console.WriteLine("Lookup for value: discrimination in tree");
+_radixTree.Lookup("discrimination", _result);
 
 Console.ReadLine();
 
