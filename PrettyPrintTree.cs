@@ -22,7 +22,7 @@ namespace BlockchainDataStructures
             Console.WriteLine(tree.Key);
 
             for (int i = 0; i < tree.ChildrenNodes.Count; i++)
-                Print(tree.ChildrenNodes[i], indent, i == tree.ChildrenNodes.Count - 1);
+                Print(tree.ChildrenNodes[i], indent, tree.IsLast);
         }
     }
 }
