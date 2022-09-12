@@ -7,18 +7,18 @@ namespace BlockchainDataStructures.RadixDataStructure
     public class RadixNode
     {
         public string Key { get; set; }
-        public int Value { get; set; }
+        public int? Value { get; set; }
         public bool IsLast { get; set; }
         public readonly List<RadixNode> ChildrenNodes;
 
         public RadixNode()
         {
             Key = String.Empty;
-            Value = 0;
+            Value = null;
             ChildrenNodes = new List<RadixNode>();
         }
 
-        public RadixNode(string key, int value) 
+        public RadixNode(string key, int? value) 
         {
             Key = key;
             Value = value;
@@ -37,7 +37,7 @@ namespace BlockchainDataStructures.RadixDataStructure
         {
             if (node == null) return false;
             return node.Key == string.Empty &&
-                node.Value == 0 &&
+                node.Value.HasValue && node.Value == 0 &&
                 node.ChildrenNodes.Count == 0;
         }
 

@@ -80,9 +80,11 @@ namespace BlockChainDataStructures.RadixdataStructure
                         string previousKey = node.Key.Substring(matches, node.Key.Length - matches);
                         string newKey = key.Substring(matches, key.Length - matches);
 
+                        int? previousValue = node.Value;
                         node.Key = root;
+                        node.Value = null;
 
-                        var newNodeWithPreviousKey = new RadixNode(previousKey,value);
+                        var newNodeWithPreviousKey = new RadixNode(previousKey, previousValue);
                         newNodeWithPreviousKey.ChildrenNodes.AddRange(node.ChildrenNodes);
 
                         node.ChildrenNodes.Clear();

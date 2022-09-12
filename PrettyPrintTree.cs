@@ -19,7 +19,8 @@ namespace BlockchainDataStructures
                 Console.Write("|-");
                 indent += "| ";
             }
-            Console.WriteLine(tree.Key);
+            var str = tree.Value.HasValue ? $"{tree.Key} ({tree.Value.Value})" : tree.Key;
+            Console.WriteLine(str);
 
             for (int i = 0; i < tree.ChildrenNodes.Count; i++)
                 Print(tree.ChildrenNodes[i], indent, tree.IsLast);
