@@ -37,7 +37,7 @@ namespace BlockchainDataStructures.RadixDataStructure
         {
             if (node == null) return false;
             return node.Key == string.Empty &&
-                node.Value.HasValue && node.Value == 0 &&
+                !node.Value.HasValue &&
                 node.ChildrenNodes.Count == 0;
         }
 
