@@ -56,6 +56,7 @@ var _allAddedWords = _radixTree.GetAllInsertedWords(_result);
 
 PrettyPrintTree.Print(_result, "", true);
 
+Console.WriteLine("Check if the number of records inserted in tree matches the inout dataset given to feed the tree...");
 bool _hasIssue = (_allAddedWords.Count != input.Count);
 
 if (!_hasIssue)
@@ -67,7 +68,7 @@ if (!_hasIssue)
 }
 if (hasIssue)
 {
-    Console.WriteLine("Trying ti figure out what words have not been added to tree...");
+    Console.WriteLine("Trying to figure out what words have not been added to tree...");
     foreach (var word in input)
     {
         if(!_allAddedWords.Contains(word.Key))
