@@ -1,9 +1,4 @@
-﻿using System.Linq;
-using System.Reflection.Emit;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using BlockchainDataStructures.RadixDataStructure;
-using static System.Net.Mime.MediaTypeNames;
+﻿using BlockchainDataStructures.RadixDataStructure;
 
 namespace BlockChainDataStructures.RadixdataStructure
 {
@@ -48,59 +43,57 @@ namespace BlockChainDataStructures.RadixdataStructure
                 node.ChildrenNodes.Add(new RadixNode(keyValue.Key, keyValue.Value));
                 return;
             }
-            else
+
+            string key = keyValue.Key;
+            int value = keyValue.Value;
+
+            var matches = GetNearestBestConsecutivesMatchesChars(key, node);
+            if ((matches >= 0) && (matches < key.Length) && (matches >= node.Key.Length))
             {
-                string key = keyValue.Key;
-                int value = keyValue.Value;
-                var matches = GetNearestBestConsecutivesMatchesChars(key, node);
-
-                if ((matches >= 0) && (matches < key.Length) && (matches >= node.Key.Length))
+                bool inserted = false;
+                var keyPart = key.Substring(matches, key.Length - matches);
+                foreach (var childNode in node.ChildrenNodes.Where(x => x.Key.StartsWith(keyPart[0])))
                 {
-                    bool inserted = false;
-                    var keyPart = key.Substring(matches, key.Length - matches);
-                    foreach (var childNode in node.ChildrenNodes.Where(x => x.Key.StartsWith(keyPart[0])))
-                    {
-                        inserted = true;
-                        Insert(new KeyValuePair<string, int>(keyPart, value), childNode);
-                    }
-                    if (!inserted)
-                    {
-                        node.ChildrenNodes.Add(new RadixNode(keyPart, value));
-                    }
+                    inserted = true;
+                    Insert(new KeyValuePair<string, int>(keyPart, value), childNode);
                 }
-                else
+                if (!inserted)
                 {
-                    if (matches < key.Length)
-                    {
-                        //(https://en.wikipedia.org/wiki/Radix_tree) => Insertion 4th step
-                        //Insert 'team' while splitting 'test' and creating a new edge label 'st'
-                        //Insert 'toast' while splitting 'te' and moving previous strings a level lower
-
-                        string root = key.Substring(0, matches);
-                        string previousKey = node.Key.Substring(matches, node.Key.Length - matches);
-                        string newKey = key.Substring(matches, key.Length - matches);
-
-                        int? previousValue = node.Value;
-                        node.Key = root;
-                        node.Value = null;
-
-                        var newNodeWithPreviousKey = new RadixNode(previousKey, previousValue);
-                        newNodeWithPreviousKey.ChildrenNodes.AddRange(node.ChildrenNodes);
-
-                        node.ChildrenNodes.Clear();
-                        node.ChildrenNodes.Add(newNodeWithPreviousKey);
-
-                        var newNodeWithNewKey = new RadixNode(newKey, value);
-                        node.ChildrenNodes.Add(newNodeWithNewKey);
-
-                        return;
-                    }
-                    if (matches > node.Key.Length)
-                    {
-                        string mewKey = node.Key.Substring(node.Key.Length, key.Length);
-                        node.ChildrenNodes.Add(new RadixNode(mewKey,value));
-                    }
+                    node.ChildrenNodes.Add(new RadixNode(keyPart, value));
                 }
+            }
+            else if (matches <= key.Length)
+            {
+                //(https://en.wikipedia.org/wiki/Radix_tree) => Insertion 4th step
+                //Insert 'team' while splitting 'test' and creating a new edge label 'st'
+                //Insert 'toast' while splitting 'te' and moving previous strings a level lower
+
+                string root = key.Substring(0, matches);
+                string previousKey = node.Key.Substring(matches, node.Key.Length - matches);
+                string newKey = key.Substring(matches, key.Length - matches);
+
+                int? previousValue = node.Value;
+                node.Key = root;
+                node.Value = string.IsNullOrEmpty(newKey) ? value : null;
+
+                var newNodeWithPreviousKey = new RadixNode(previousKey, previousValue);
+                newNodeWithPreviousKey.ChildrenNodes.AddRange(node.ChildrenNodes);
+
+                node.ChildrenNodes.Clear();
+                node.ChildrenNodes.Add(newNodeWithPreviousKey);
+
+                if (!string.IsNullOrEmpty(newKey))
+                {
+                    var newNodeWithNewKey = new RadixNode(newKey, value);
+                    node.ChildrenNodes.Add(newNodeWithNewKey);
+                }
+
+                return;
+            }
+            else if (matches > node.Key.Length)
+            {
+                string mewKey = node.Key.Substring(node.Key.Length, key.Length);
+                node.ChildrenNodes.Add(new RadixNode(mewKey, value));
             }
         }
 
@@ -128,12 +121,30 @@ namespace BlockChainDataStructures.RadixdataStructure
 
                 foreach (var childNode in node.ChildrenNodes.Where(x=>x.Key.StartsWith(lookupKey[0])))
                 {
-                    return Lookup(lookupKey, childNode);
+                    return LookupInternal(lookupKey, childNode);
                 }
 
                 return false;
             }
             return (matches == node.Key.Length);
+        }
+        public List<string> GetAllInsertedWords(RadixNode rootNode)
+        {
+            List<string> words = new ();
+            if (rootNode == null) return words;
+            GetAllInsertedWordsInternal(rootNode, string.Empty, words);
+            return words;
+        }
+        private void GetAllInsertedWordsInternal(RadixNode node, string currentWord, List<string> words)
+        {
+            currentWord += node.Key;
+            if (node.Value.HasValue)
+                words.Add(currentWord);
+
+            for (int i = 0; i < node.ChildrenNodes.Count; i++)
+            {
+                GetAllInsertedWordsInternal(node.ChildrenNodes[i], currentWord, words);
+            }
         }
 
         /// <summary>
