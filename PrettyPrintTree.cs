@@ -1,17 +1,47 @@
-﻿using System;
-using System.Xml.Linq;
+﻿using System.Text;
 
 namespace BlockchainDataStructures
 {
     //https://stackoverflow.com/questions/1649027/how-do-i-print-out-a-tree-structure
     public class PrettyPrintTree
     {
-        public static void Print(RadixDataStructure.RadixNode tree, string indent, bool last)
+        private StringBuilder _sb;
+        public PrettyPrintTree()
+        {
+            _sb = new StringBuilder(); 
+        }
+        public string PrintToString(RadixDataStructure.RadixNode tree, string indent, bool last)
+        {
+            _sb.Append(indent);
+            //Console.Write(indent);
+            if (last)
+            {
+                _sb.Append("\\-");
+                //Console.Write("\\-");
+                indent += "  ";
+            }
+            else
+            {
+                _sb.Append("|-");
+                //Console.Write("|-");
+                indent += "| ";
+            }
+            var str = tree.Value.HasValue ? $"{tree.Key} ({tree.Value.Value})" : tree.Key;
+            _sb.AppendLine(str);
+            //Console.WriteLine(str);
+
+            for (int i = 0; i < tree.ChildrenNodes.Count; i++)
+                PrintToString(tree.ChildrenNodes[i], indent, tree.IsLast);
+
+            return _sb.ToString();
+        }
+
+        public void PrintToConsole(RadixDataStructure.RadixNode tree, string indent, bool last)
         {
             Console.Write(indent);
             if (last)
             {
-                Console.Write("\\-");
+                //Console.Write("\\-");
                 indent += "  ";
             }
             else
@@ -23,7 +53,7 @@ namespace BlockchainDataStructures
             Console.WriteLine(str);
 
             for (int i = 0; i < tree.ChildrenNodes.Count; i++)
-                Print(tree.ChildrenNodes[i], indent, tree.IsLast);
+                PrintToConsole(tree.ChildrenNodes[i], indent, tree.IsLast);
         }
     }
 }

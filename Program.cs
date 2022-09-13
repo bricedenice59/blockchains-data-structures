@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Text.Json.Nodes;
 using BlockchainDataStructures;
+using BlockchainDataStructures.RadixDataStructure.Utils;
 using BlockChainDataStructures;
 using BlockChainDataStructures.RadixdataStructure;
 
@@ -16,9 +17,10 @@ List<KeyValuePair<string, int>> dataSet = new Dictionary<string, int>
       {"toast",6},
     }.ToList();
 
+var prettyPrintTree = new PrettyPrintTree();
 RadixTree radixTree = new();
 var result = radixTree.Add(dataSet);
-PrettyPrintTree.Print(result, "", true);
+prettyPrintTree.PrintToConsole(result, "", true);
 var allWordsInserted = radixTree.GetAllInsertedWords(result);
 
 bool hasIssue = (allWordsInserted.Count != dataSet.Count);
@@ -54,7 +56,9 @@ var input = _dataSet.ToList();
 var _result = _radixTree.Add(input);
 var _allAddedWords = _radixTree.GetAllInsertedWords(_result);
 
-PrettyPrintTree.Print(_result, "", true);
+prettyPrintTree = new PrettyPrintTree();
+var prettyPrintStr = prettyPrintTree.PrintToString(_result, "", true);
+File.WriteAllText(Path.Combine(thisDir, "RadixDataStructure", "treeWithSortedInput.json"), prettyPrintStr);
 
 Console.WriteLine("Check if the number of records inserted in tree matches the inout dataset given to feed the tree...");
 bool _hasIssue = (_allAddedWords.Count != input.Count);
@@ -79,6 +83,20 @@ if (hasIssue)
     throw new Exception("There was an issue with the insert algorithm !");
 }
 
+//since the list of random words I picked on internet is already sorted and may help for the insert algorithm to work efficiently
+//try to "unsort" the dataset and create a tree and compare with the previous one
+var shuffledList = input.Shuffle();
+RadixTree _radixTreeWithShuffledList = new();
+var _resultTreeWithShuffledList = _radixTreeWithShuffledList.Add(shuffledList);
+
+prettyPrintTree = new PrettyPrintTree();
+prettyPrintStr = prettyPrintTree.PrintToString(_resultTreeWithShuffledList, "", true);
+File.WriteAllText(Path.Combine(thisDir, "RadixDataStructure", "treeWithUnSortedInput.json"), prettyPrintStr);
+
+var _allAddedWordsWithShuffledList = _radixTreeWithShuffledList.GetAllInsertedWords(_resultTreeWithShuffledList);
+bool _hasTreeWithShuffledListIssue = _allAddedWordsWithShuffledList.Count != shuffledList.Count;
+if(_hasTreeWithShuffledListIssue)
+    throw new Exception("There was an issue with the insert algorithm !");
 
 Console.WriteLine("Lookup for value: discrimination in tree");
 var found = _radixTree.Lookup("discrimination", _result);

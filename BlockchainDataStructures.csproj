@@ -15,7 +15,6 @@
     <None Remove="MerkleTree\Utils\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="RadixDataStructure\" />
     <Folder Include="MerkleTree\" />
     <Folder Include="MerkleTree\Utils\" />
   </ItemGroup>
