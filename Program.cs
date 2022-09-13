@@ -1,9 +1,9 @@
-﻿using System.Linq;
-using System.Text.Json.Nodes;
-using BlockchainDataStructures;
-using BlockchainDataStructures.RadixDataStructure.Utils;
+﻿using System.Text.Json.Nodes;
 using BlockChainDataStructures;
 using BlockChainDataStructures.RadixdataStructure;
+using BlockchainDataStructures.RadixDataStructure.Utils;
+using BlockchainDataStructures.Utils;
+using System;
 
 //dataset exported from wikipedia for learning purpose
 List<KeyValuePair<string, int>> dataSet = new Dictionary<string, int>
@@ -35,7 +35,9 @@ if (hasIssue)
     throw new Exception("There was an issue with the insert algorithm !");
 
 
-//now try with fake random words
+//now try with fake random words picked at
+//https://github.com/dwyl/english-words/blob/master/words_dictionary.json
+//https://github.com/words/an-array-of-french-words
 var thisDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 var mockDataJsonPath = File.ReadAllText(Path.Combine(thisDir, "RadixDataStructure", "mockData.json"));
 var jsonObject = JsonNode.Parse(mockDataJsonPath)?.AsArray();
@@ -48,59 +50,86 @@ for (int i = 0; i < jsonObject.Count; i++)
     var key = jsonObject.ElementAt(i);
     if(!_dataSet.ContainsKey(key.ToString()))
         _dataSet.Add(key.ToString(), i);
-    else Console.WriteLine(key);
 }
 
 RadixTree _radixTree = new();
 var input = _dataSet.ToList();
+
+var _measureTimePerformance = new MeasureTimePerformance();
+_measureTimePerformance.Init();
+_measureTimePerformance.Start();
+
 var _result = _radixTree.Add(input);
+
+_measureTimePerformance.Stop();
+
+Console.WriteLine($"Insertion of {input.Count} sorted values in tree completed in ${_measureTimePerformance.GetElapsedTime()}");
+
 var _allAddedWords = _radixTree.GetAllInsertedWords(_result);
 
 prettyPrintTree = new PrettyPrintTree();
-var prettyPrintStr = prettyPrintTree.PrintToString(_result, "", true);
-File.WriteAllText(Path.Combine(thisDir, "RadixDataStructure", "treeWithSortedInput.json"), prettyPrintStr);
+//prettyPrintTree.PrintToConsole(_result, "", true);
+//var fileToWrite = Path.Combine(thisDir, "RadixDataStructure", "treeWithSortedInput.txt");
+//File.WriteAllText(fileToWrite, prettyPrintStr);
+//Console.WriteLine($"Tree structure written in file: {fileToWrite}");
 
-Console.WriteLine("Check if the number of records inserted in tree matches the inout dataset given to feed the tree...");
+Console.WriteLine("Check if the number of records inserted in tree matches the dataset given to feed the tree...");
 bool _hasIssue = (_allAddedWords.Count != input.Count);
+if (_hasIssue)
+    throw new Exception("There was an issue with the insert algorithm !");
 
+//compare lookup value with Contains vs tree lookup fucntion
+var lookupWordsList = input.Skip(300000).Take(3000);
 if (!_hasIssue)
 {
-    foreach (var word in input)
+    _measureTimePerformance.Init();
+    _measureTimePerformance.Start();
+    foreach(var word in lookupWordsList)
     {
-        hasIssue &= !_allAddedWords.Contains(word.Key);
+        _allAddedWords.Contains(word.Key);
     }
+    _measureTimePerformance.Stop();
+    Console.WriteLine($"lookup {lookupWordsList.Count()} values using contains completed in ${_measureTimePerformance.GetElapsedTime()}");
 }
-if (hasIssue)
+
+//search with the tree's lookup function is amazingly fast!
+if (!_hasIssue)
 {
-    Console.WriteLine("Trying to figure out what words have not been added to tree...");
-    foreach (var word in input)
+    _measureTimePerformance.Init();
+    _measureTimePerformance.Start();
+    foreach (var word in lookupWordsList)
     {
-        if(!_allAddedWords.Contains(word.Key))
-        {
-            Console.WriteLine($"word: {word.Key} has not been inserted");
-        }
+        _radixTree.Lookup(word.Key, _result);
     }
-    throw new Exception("There was an issue with the insert algorithm !");
+    _measureTimePerformance.Stop();
+    Console.WriteLine($"lookup {lookupWordsList.Count()} values using the tree lookup function completed in ${_measureTimePerformance.GetElapsedTime()}");
 }
 
 //since the list of random words I picked on internet is already sorted and may help for the insert algorithm to work efficiently
 //try to "unsort" the dataset and create a tree and compare with the previous one
 var shuffledList = input.Shuffle();
 RadixTree _radixTreeWithShuffledList = new();
+
+_measureTimePerformance.Init();
+_measureTimePerformance.Start();
+
 var _resultTreeWithShuffledList = _radixTreeWithShuffledList.Add(shuffledList);
 
+_measureTimePerformance.Stop();
+
+Console.WriteLine($"Insertion of {shuffledList.Count} unsorted values in tree completed in ${_measureTimePerformance.GetElapsedTime()}");
+
 prettyPrintTree = new PrettyPrintTree();
-prettyPrintStr = prettyPrintTree.PrintToString(_resultTreeWithShuffledList, "", true);
-File.WriteAllText(Path.Combine(thisDir, "RadixDataStructure", "treeWithUnSortedInput.json"), prettyPrintStr);
+//prettyPrintTree.PrintToConsole(_resultTreeWithShuffledList, "", true);
+//var _fileToWrite = Path.Combine(thisDir, "RadixDataStructure", "treeWithUnSortedInput.txt");
+//File.WriteAllText(_fileToWrite, prettyPrintStr);
+//Console.WriteLine($"Tree structure written in file: {_fileToWrite}");
 
 var _allAddedWordsWithShuffledList = _radixTreeWithShuffledList.GetAllInsertedWords(_resultTreeWithShuffledList);
 bool _hasTreeWithShuffledListIssue = _allAddedWordsWithShuffledList.Count != shuffledList.Count;
 if(_hasTreeWithShuffledListIssue)
     throw new Exception("There was an issue with the insert algorithm !");
 
-Console.WriteLine("Lookup for value: discrimination in tree");
-var found = _radixTree.Lookup("discrimination", _result);
-Console.WriteLine(found);
 Console.ReadLine();
 
 //merkle tree code section
